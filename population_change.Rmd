@@ -2,11 +2,16 @@
 title: "Population Change"
 author: "Jason Jones"
 date: "10/30/2019"
-output: html_document
+output:
+  html_document:
+    theme: journal
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, out.width = "80%", dpi = 320, fig.height = 10)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      out.width = "80%", dpi = 320, fig.height = 10)
 ```
 
 # Introduction
@@ -159,7 +164,7 @@ for_map <- country_pop_shares %>%
   mutate(change = `2017` - `2010`) %>%
   rename(fips = GEOID, state = NAME)
 
-plot_usmap(data = for_map, values = "change") +
+plot_usmap(data = for_map, values = "change", color = "white") +
   scale_fill_distiller("Raw Change", type = "div", palette = "Spectral",
                        direction = 1, labels = scales::comma_format()) +
   theme(legend.position = "right") +
@@ -177,7 +182,7 @@ for_map <- country_pop_shares %>%
   mutate(change = `2017` - `2010`) %>%
   rename(fips = GEOID, state = NAME)
 
-plot_usmap(data = for_map, values = "change") +
+plot_usmap(data = for_map, values = "change", color = "white") +
   scale_fill_distiller("Change in Share", type = "div", palette = "Spectral",
                        direction = 1, labels = scales::percent_format()) +
   theme(legend.position = "right") +
@@ -192,7 +197,7 @@ Beautiful!
 
 You will notice a different step here. I am using the `tigris` package to create a `sf` object of counties in North Carolina. I created the last to plots with the `usmap` package but moving forward I will be using my own `sf` objects to merge and plot.
 
-```{r}
+```{r results='hide'}
 nc_counties_sf <- counties(state = 37) %>%
   st_as_sf()
 ```
@@ -252,8 +257,12 @@ pop_shares %>%
             labs(x = NULL,
                  y = NULL,
                  caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
+
 ```
 
+Whoa! That is a lot to digest in one plot. 100 counties makes for a lot of information. How about we just plot the top 10 and bottom 10 separately?
+
+Here we go...First the top 10...
 
 ```{r}
 pop_shares %>%
@@ -263,13 +272,15 @@ pop_shares %>%
   mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
   top_n(10, change) %>%
   ggplot(aes(reorder(NAME, change), change)) +
-  geom_col() +
+  geom_col(fill = "#3288bd") +
   coord_flip() +
   scale_y_continuous(labels = scales::comma_format()) +
-  theme_minimal() +
-  theme(text = element_text(family = "Segoe UI"))
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
 
+Now the bottom 10...
 
 ```{r}
 pop_shares %>%
@@ -279,13 +290,15 @@ pop_shares %>%
   mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
   top_n(-10, change) %>%
   ggplot(aes(reorder(NAME, change), change)) +
-  geom_col() +
+  geom_col(fill = "#9e0142") +
   coord_flip() +
   scale_y_continuous(labels = scales::comma_format()) +
-  theme_minimal() +
-  theme(text = element_text(family = "Segoe UI"))
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
 
+On to change in percent share of population for NC counties...
 
 ```{r}
 pop_shares %>%
@@ -297,10 +310,18 @@ pop_shares %>%
   geom_col(aes(fill = change)) +
   coord_flip() +
   scale_y_continuous(labels = scales::percent_format()) +
-  scale_fill_viridis_c(direction = -1)
+  scale_fill_distiller("Change in Share", type = "div", palette = "Spectral", 
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
 
+Once again, that is a lot to digest. I do like this visual though because you can quickly see that substantial population growth was limited.
 
+Let's do top and bottom 10 again.
+
+Top 10 first...
 
 ```{r}
 pop_shares %>%
@@ -310,13 +331,15 @@ pop_shares %>%
   mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
   top_n(10, change) %>%
   ggplot(aes(reorder(NAME, change), change)) +
-  geom_col() +
+  geom_col(fill = "#3288bd") +
   coord_flip() +
   scale_y_continuous(labels = scales::percent_format()) +
-  theme_minimal() +
-  theme(text = element_text(family = "Segoe UI"))
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
 
+And now bottom 10 again...
 
 ```{r}
 pop_shares %>%
@@ -326,26 +349,19 @@ pop_shares %>%
   mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
   top_n(-10, change) %>%
   ggplot(aes(reorder(NAME, change), change)) +
-  geom_col() +
+  geom_col(fill = "#9e0142") +
   coord_flip() +
   scale_y_continuous(labels = scales::percent_format()) +
-  theme_minimal() +
-  theme(text = element_text(family = "Segoe UI"))
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
 
-```{r}
-pop_shares %>%
-  select(GEOID, NAME, survey_year, pct_share) %>%
-  spread(key = survey_year, value = pct_share) %>%
-  mutate(change = `2017` - `2010`) %>%
-  mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
-  left_join(nc_counties_sf, by = c("GEOID" = "GEOID")) %>%
-  st_as_sf() %>%
-  ggplot() +
-  geom_sf(aes(fill = change)) +
-  scale_fill_viridis_c(option = "magma", direction = -1)
-```
+How about we take our NC counties data and get spatial again?
 
+Let's do it!
+
+Raw population change across North Carolina first!
 
 ```{r}
 pop_shares %>%
@@ -356,9 +372,38 @@ pop_shares %>%
   left_join(nc_counties_sf, by = c("GEOID" = "GEOID")) %>%
   st_as_sf() %>%
   ggplot() +
-  geom_sf(aes(fill = change)) +
-  scale_fill_viridis_c(option = "magma", direction = -1)
+  geom_sf(aes(fill = change), color = "white") +
+  scale_fill_distiller("Raw Change", type = "div", palette = "Spectral",
+                       direction = 1, labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
+
+Now percent change in population share.
+
+```{r}
+pop_shares %>%
+  select(GEOID, NAME, survey_year, pct_share) %>%
+  spread(key = survey_year, value = pct_share) %>%
+  mutate(change = `2017` - `2010`) %>%
+  mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
+  left_join(nc_counties_sf, by = c("GEOID" = "GEOID")) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(aes(fill = change), color = "white") +
+  scale_fill_distiller("Change in Share", type = "div", palette = "Spectral",
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
+```
+
+# Guilford Tracts
+
+I am using the `tigris` package again to create a `sf` object of tracts in Guilford County. I am using the same workflow again so I will spare you all of my walkthrough text.
+
+Let's get going..
 
 ```{r}
 population_tracts <- map_df(.x = years,
@@ -377,8 +422,9 @@ population_tracts_updated <- map(.x = years,
 ```
 
 
-```{r}
-guil_tracts <- tracts(state = 37, county = 81)
+```{r results='hide'}
+tracts_sf <- tracts(state = 37, county = 81) %>%
+  st_as_sf()
 
 tracts_sf <- guil_tracts %>%
   st_as_sf()
@@ -393,11 +439,36 @@ guil_totals <- population_tracts_updated %>%
 
 ```
 
+
 ```{r}
 guil_pop_shares <- population_tracts_updated %>%
   left_join(guil_totals) %>%
   mutate(pct_share = estimate/county_total)
 ```
+
+Time to plot again!
+
+Raw change first.
+
+```{r}
+guil_pop_shares %>%
+  select(GEOID, NAME, survey_year, estimate) %>%
+  spread(key = survey_year, value = estimate) %>%
+  mutate(change = `2017` - `2010`) %>%
+  mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
+  left_join(tracts_sf, by = c("GEOID" = "GEOID")) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(aes(fill = change), color = "white") +
+  scale_fill_distiller("Raw Change", type = "div", palette = "Spectral",
+                       direction = 1, labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
+```
+
+
+Now percent change in population share.
 
 
 ```{r}
@@ -409,63 +480,16 @@ guil_pop_shares %>%
   left_join(tracts_sf, by = c("GEOID" = "GEOID")) %>%
   st_as_sf() %>%
   ggplot() +
-  geom_sf(aes(fill = change)) +
-  scale_fill_viridis_c(option = "magma", direction = -1)
+  geom_sf(aes(fill = change), color = "white") +
+  scale_fill_distiller("Change in Share", type = "div", palette = "Spectral",
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = "\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates")
 ```
 
 
-
-```{r}
-guil_pop_shares %>%
-  select(GEOID, NAME, survey_year, estimate) %>%
-  spread(key = survey_year, value = estimate) %>%
-  mutate(change = `2017` - `2010`) %>%
-  mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
-  left_join(tracts_sf, by = c("GEOID" = "GEOID")) %>%
-  st_as_sf() %>%
-  ggplot() +
-  geom_sf(aes(fill = change)) +
-  scale_fill_viridis_c(option = "magma", direction = -1)
-```
-
-
-```{r}
-pop_shares %>%
-  select(GEOID, NAME, survey_year, estimate) %>%
-  spread(key = survey_year, value = estimate) %>%
-  mutate(change = `2017` - `2010`) %>%
-  mutate(NAME = str_remove(NAME, "County, North Carolina")) %>%
-  select(1:2, change) %>%
-  arrange(desc(change)) %>%
-  mutate(change = prettyNum(change, big.mark = ",")) %>%
-  DT::datatable() %>%
-  DT::formatStyle('change', DT::styleColorBar()) %>%
-  DT::saveWidget(file = "C:/Users/jjones6/Desktop/test.html")
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Whew! That's all for now. Until next time...
 
 
 
