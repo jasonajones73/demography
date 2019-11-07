@@ -426,8 +426,6 @@ population_tracts_updated <- map(.x = years,
 tracts_sf <- tracts(state = 37, county = 81) %>%
   st_as_sf()
 
-tracts_sf <- guil_tracts %>%
-  st_as_sf()
 ```
 
 
@@ -444,6 +442,7 @@ guil_totals <- population_tracts_updated %>%
 guil_pop_shares <- population_tracts_updated %>%
   left_join(guil_totals) %>%
   mutate(pct_share = estimate/county_total)
+
 ```
 
 Time to plot again!
